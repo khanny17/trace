@@ -1,0 +1,7 @@
+[package]
+name = "trace"
+version = "0.1.0"
+authors = ["Kevin <kph1958@rit.edu>"]
+
+[dependencies]
+grep = "0.1.8"
