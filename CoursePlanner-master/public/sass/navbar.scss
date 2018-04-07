@@ -1,0 +1,81 @@
+@import 'colors';
+
+$background: #212121;
+$border: #424242;
+$text: #F5F5F5;
+$text-hover: #BDBDBD;
+$text-active: #9E9E9E;
+
+
+.user-dropdown {
+    .fa-exclamation-triangle {
+        color: $warning-yellow;
+    }
+}
+
+//bootstrap stuff
+
+.navbar {
+    margin: 0;
+}
+
+.navbar-default {
+  background-color: $background;
+  border: none;
+  border-radius: 0;
+}
+.navbar-default .navbar-brand {
+  color: $text;
+}
+.navbar-default .navbar-brand:hover, .navbar-default .navbar-brand:focus {
+  color: $text-hover;
+  background: $border;
+}
+.navbar-default .navbar-text {
+  color: $text;
+}
+.navbar-default .navbar-nav > li > a {
+  color: $text;
+}
+.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
+  color: $text-hover;
+  background: $border;
+}
+
+.navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus {
+  color: $text-active;
+}
+.navbar-default .navbar-toggle {
+  /* hide border */
+  border-color: $background;
+}
+.navbar-default .navbar-toggle:hover, .navbar-default .navbar-toggle:focus {
+  background-color: $border;
+}
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: $text;
+}
+.navbar-default .navbar-collapse,
+.navbar-default .navbar-form {
+  border-color: $text;
+  color: $background;
+}
+.navbar-default .navbar-link {
+  color: $text;
+}
+.navbar-default .navbar-link:hover {
+  color: $text-hover;
+}
+
+@media (max-width: 767px) {
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
+      color: $text;
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
+      color: $text-hover;
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
+      color: $text-active;
+      background-color: $background;
+  }
+}

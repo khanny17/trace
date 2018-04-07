@@ -1,0 +1,9 @@
+.env
+node_modules/
+dist/
+public/libs/
+npm-debug.log
+docs/
+.idea/
+test/reports
+data/

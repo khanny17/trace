@@ -1,0 +1,23 @@
+version: '2.0'
+
+services:
+    mongo:
+        image: mongo
+        volumes:
+            - ./data:/data/db
+        networks:
+            - devnetwork
+    web:
+        environment:
+            - TEST=true
+            - JWT_SECRET
+        build:
+            context: .
+            dockerfile: Dockerfile.test
+        ports:
+            - "8080:8080"
+        networks:
+            - devnetwork
+
+networks:
+    devnetwork:

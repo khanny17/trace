@@ -5,3 +5,6 @@ authors = ["Kevin <kph1958@rit.edu>"]
 
 [dependencies]
 grep = "0.1.8"
+walkdir = "2.1.4"
+memmap = "0.6.2"
+regex = "0.2.10"
