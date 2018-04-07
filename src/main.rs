@@ -1,8 +1,14 @@
+#[macro_use] extern crate serde_derive;
 #[macro_use] extern crate lazy_static;
+
 extern crate grep;
 extern crate walkdir;
 extern crate memmap;
 extern crate regex;
+
+extern crate serde;
+extern crate serde_json;
+extern crate serde_yaml;
 
 use regex::Regex;
 
@@ -86,12 +92,38 @@ fn walk_dir(dir: &str, search: &Grep) {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct TraceConfig {
+    identifier: String, // The prefix before the trace in source files
+}
+impl TraceConfig {
+    fn new() -> TraceConfig {
+        TraceConfig { identifier: String::from("~tr:") }
+    }
+}
+fn read_config() -> TraceConfig {
+    let file = File::open(".trace.yml");
+    if file.is_err() {
+        eprintln!("No .trace.yml file found");
+        return TraceConfig::new();
+    }
+
+    return serde_yaml::from_reader(file.unwrap()).unwrap_or_else(|e| {
+        eprintln!("Unable to parse .trace.yml: {}", e);
+        return TraceConfig::new();
+    });
+}
+
 fn main() {
+    let config = read_config();
+
+    println!("{:?}", config);
+
     let path = std::env::args()
         .nth(1)
         .unwrap_or(String::from("."));
 
-    let ref_search = GrepBuilder::new("~tr:")
+    let ref_search = GrepBuilder::new(config.identifier.as_str())
         .build()
         .expect("Unable to build reference search");
     walk_dir(&path, &ref_search);
