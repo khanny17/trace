@@ -27,6 +27,7 @@ use memmap::Mmap;
 struct Trace {
     pub filename: String,
     pub line_number: u32,
+    pub line: String,
     pub requirement_id: String,
 }
 
@@ -40,7 +41,8 @@ fn should_ignore(path: &str) -> bool {
     return RE.find(path).is_some();
 }
 
-fn search_file(file: &File, search: &Grep) -> Result<Vec<(u32, String)>, String> {
+fn search_file(file: &File, search: &Grep, config: &TraceConfig)
+    -> Result<Vec<(u32, String, String)>, String> {
     let mmap = unsafe { Mmap::map(&file) };
     if mmap.is_err() {
         return Err(format!("failed to map the file: {}", mmap.unwrap_err()));
@@ -59,7 +61,12 @@ fn search_file(file: &File, search: &Grep) -> Result<Vec<(u32, String)>, String>
         let mut the_match = Match::new();
         let found = search.read_match(&mut the_match, line.as_bytes(), 0);
         if found {
-            findings.push( (line_number, line) );
+            println!("{}, {}", the_match.start(), the_match.end());
+            let start_index = line.find(config.identifier.as_str()).unwrap();
+            let mut id = line.clone().into_bytes();
+            id.drain(0..start_index+config.identifier.as_str().len());
+            let id = String::from_utf8_lossy(&id).into_owned();
+            findings.push( (line_number, line, id) );
         }
         line_number += 1;
     }
@@ -67,7 +74,7 @@ fn search_file(file: &File, search: &Grep) -> Result<Vec<(u32, String)>, String>
     return Ok(findings);
 }
 
-fn walk_dir(dir: &str, search: &Grep) -> Vec<Trace> {
+fn walk_dir(dir: &str, search: &Grep, config: &TraceConfig) -> Vec<Trace> {
     let mut traces = Vec::new();
     for entry in WalkDir::new(dir) {
         let entry = entry.unwrap();
@@ -93,13 +100,14 @@ fn walk_dir(dir: &str, search: &Grep) -> Vec<Trace> {
         }
 
         let file = file.unwrap();
-        let findings = search_file(&file, search).unwrap_or(Vec::new());
+        let findings = search_file(&file, search, &config).unwrap_or(Vec::new());
         if !findings.is_empty() {
             for f in findings {
-                let ( line, id ) = f;
+                let ( line_number, line, id ) = f;
                 traces.push(Trace {
                     filename: String::from(entry.path().to_str().unwrap()),
-                    line_number: line,
+                    line_number: line_number,
+                    line: line,
                     requirement_id: id,
                 });
             }
@@ -218,7 +226,7 @@ fn main() {
     let ref_search = GrepBuilder::new(config.identifier.as_str())
         .build()
         .expect("Unable to build reference search");
-    let traces = walk_dir(&path, &ref_search);
+    let traces = walk_dir(&path, &ref_search, &config);
 
     // Okay, now we have the requirements and all the instances of identifiers
     // in the files. Time to make the connections.
@@ -231,12 +239,17 @@ fn main() {
         });
     }
 
+    let mut homeless_traces = Vec::new();
     for t in traces {
-        println!("{}:{}, {}", t.filename, t.line_number, t.requirement_id);
         if req_map.contains_key(&t.requirement_id) {
             req_map.get_mut(&t.requirement_id).unwrap().traces.push(t);
+        } else {
+            homeless_traces.push(t);
         }
     }
 
+    println!("Traces by Requirement:");
     println!("{:#?}", req_map);
+    println!("Unrecognized Traces:");
+    println!("{:#?}", homeless_traces);
 }
