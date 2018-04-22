@@ -10,6 +10,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 
+use std::collections::HashMap;
 use regex::Regex;
 
 use std::fs::File;
@@ -21,6 +22,13 @@ use std::ops::Deref;
 use std::io::BufRead;
 
 use memmap::Mmap;
+
+#[derive(Debug)]
+struct Trace {
+    pub filename: String,
+    pub line_number: u32,
+    pub requirement_id: String,
+}
 
 fn should_ignore(path: &str) -> bool {
     // This lets us only instantiate the regex one time, which is expensive
@@ -59,7 +67,8 @@ fn search_file(file: &File, search: &Grep) -> Result<Vec<(u32, String)>, String>
     return Ok(findings);
 }
 
-fn walk_dir(dir: &str, search: &Grep) {
+fn walk_dir(dir: &str, search: &Grep) -> Vec<Trace> {
+    let mut traces = Vec::new();
     for entry in WalkDir::new(dir) {
         let entry = entry.unwrap();
 
@@ -86,10 +95,17 @@ fn walk_dir(dir: &str, search: &Grep) {
         let file = file.unwrap();
         let findings = search_file(&file, search).unwrap_or(Vec::new());
         if !findings.is_empty() {
-            println!("{}", entry.path().display());
-            println!("{:?}", findings);
+            for f in findings {
+                let ( line, id ) = f;
+                traces.push(Trace {
+                    filename: String::from(entry.path().to_str().unwrap()),
+                    line_number: line,
+                    requirement_id: id,
+                });
+            }
         }
     }
+    return traces;
 }
 
 // Read in requirements yaml files, linting for correctness
@@ -184,19 +200,43 @@ fn read_config() -> TraceConfig {
     });
 }
 
+#[derive(Debug)]
+struct ReqTraces {
+    requirement: Requirement,
+    traces: Vec<Trace>,
+}
+
 fn main() {
     let config = read_config();
-    println!("{:?}", config);
 
     let path = std::env::args()
         .nth(1)
         .unwrap_or(String::from("."));
 
-    let requirements = parse_requirements(format!("{}/{}", path, config.requirements_dir));
-    println!("{:?}", requirements);
+    let mut requirements = parse_requirements(format!("{}/{}", path, config.requirements_dir));
 
     let ref_search = GrepBuilder::new(config.identifier.as_str())
         .build()
         .expect("Unable to build reference search");
-    walk_dir(&path, &ref_search);
+    let traces = walk_dir(&path, &ref_search);
+
+    // Okay, now we have the requirements and all the instances of identifiers
+    // in the files. Time to make the connections.
+    let mut req_map: HashMap<String, ReqTraces> = HashMap::new();
+    while !requirements.requirements.is_empty() {
+        let id = requirements.requirements[0].id.clone();
+        req_map.insert(id, ReqTraces {
+            requirement: requirements.requirements.remove(0),
+            traces: Vec::new()
+        });
+    }
+
+    for t in traces {
+        println!("{}:{}, {}", t.filename, t.line_number, t.requirement_id);
+        if req_map.contains_key(&t.requirement_id) {
+            req_map.get_mut(&t.requirement_id).unwrap().traces.push(t);
+        }
+    }
+
+    println!("{:#?}", req_map);
 }

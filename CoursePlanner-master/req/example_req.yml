@@ -1,2 +1,3 @@
-id: CoolReqID
-name: MyCoolRequirement
+id: JWTSecret
+name: JWT Secret
+details: JWT Secret should be updated in all config files when changed

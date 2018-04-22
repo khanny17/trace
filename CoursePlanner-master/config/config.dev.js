@@ -3,6 +3,7 @@ module.exports = {
         url: 'mongodb://mongo/' + (process.env.TEST ? 'test' : 'course-planner')
     },
 
+    //~tr:JWTSecret
     jwt: {
         secret: process.env.JWT_SECRET
     },
